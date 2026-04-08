@@ -31,6 +31,7 @@ clean:
 
 ## release: create a tagged release and push to GitHub via goreleaser
 ##   Usage: make release V=0.2.0
+##   Set GITHUB_TOKEN in your environment, or gh auth token is used as fallback.
 release:
 ifndef V
 	$(error Usage: make release V=x.y.z)
@@ -41,7 +42,12 @@ endif
 	fi
 	git tag -a "v$(V)" -m "Release v$(V)"
 	git push origin "v$(V)"
-	goreleaser release --clean
+	@if [ -z "$$GITHUB_TOKEN" ]; then \
+		echo "GITHUB_TOKEN not set, falling back to gh auth token"; \
+		GITHUB_TOKEN=$$(gh auth token) goreleaser release --clean; \
+	else \
+		goreleaser release --clean; \
+	fi
 
 ## release-snapshot: build release artifacts locally without publishing
 release-snapshot:
