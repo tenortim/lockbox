@@ -1,0 +1,49 @@
+version: 2
+
+project_name: lockbox
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - id: lockbox
+    main: ./cmd/lockbox
+    binary: lockbox
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/tenortim/lockbox/internal/cmd.version={{.Version}}
+      - -X github.com/tenortim/lockbox/internal/cmd.commit={{.Commit}}
+      - -X github.com/tenortim/lockbox/internal/cmd.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+
+release:
+  github:
+    owner: tenortim
+    name: lockbox
+  draft: false
+  prerelease: auto

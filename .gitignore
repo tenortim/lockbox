@@ -1,0 +1,23 @@
+# Build artifacts
+lockbox
+dist/
+
+# Go
+*.exe
+*.test
+*.out
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# lockbox store (never commit secrets)
+store.age
+*.age
