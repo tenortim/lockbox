@@ -383,4 +383,4 @@ unavailable.
 
 ## License
 
-TBD
+[MIT](LICENSE)
