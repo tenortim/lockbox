@@ -61,8 +61,9 @@ arbitrary secrets.
    never exist as plaintext on the filesystem.
 
 2. **Session cache in kernel memory** -- Linux kernel keyring via `keyctl`
-   syscalls. Secrets live in kernel space. The session keyring (`@s`) is
-   auto-destroyed when the login session ends. No daemon needed.
+   syscalls. Secrets live in kernel space. The user keyring (`@u`) is shared
+   across all sessions for the same UID and persists as long as the user has
+   at least one active session. No daemon needed.
 
 The `unlock` command bridges the two layers: enter master password once per
 session, decrypt the store, load secrets into the kernel keyring.
@@ -246,13 +247,14 @@ type SessionCache interface {
 ```
 
 Linux implementation uses keyctl syscalls directly (add_key, keyctl_search,
-keyctl_read, keyctl_clear) against the session keyring (`@s`).
+keyctl_read, keyctl_clear) against the user keyring (`@u`).
 
 ## Risks and Considerations
 
-- **tmux/screen**: Session keyring behavior when detaching/reattaching needs
-  testing. The user keyring (`@u`) may be preferable -- could add a
-  `--keyring user` flag.
+- **tmux/screen**: Tested and confirmed that the session keyring (`@s`) is
+  revoked when entering tmux, making cached secrets inaccessible. Switched to
+  the user keyring (`@u`) which persists across all sessions for the same UID
+  and survives tmux/screen detach-reattach cycles.
 - **Container restrictions**: If keyctl syscalls are blocked, fall back to
   decrypt-on-the-fly in `run` (prompts for master password each time).
 - **Concurrent access**: Use `flock` on the store file during writes.

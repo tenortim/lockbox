@@ -33,7 +33,7 @@ func init() {
 }
 
 func getCache() cache.SessionCache {
-	return cache.NewKeyringCache()
+	return cache.NewUserKeyringCache()
 }
 
 // readPassword reads a password from the terminal, printing an asterisk for
