@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -12,6 +13,17 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Create a new encrypted secret store",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		force, _ := cmd.Flags().GetBool("force")
+
+		if _, err := os.Stat(storePath); err == nil {
+			if !force {
+				return fmt.Errorf("store already exists at %s (use --force to overwrite)", storePath)
+			}
+			if err := os.Remove(storePath); err != nil {
+				return fmt.Errorf("removing existing store: %w", err)
+			}
+		}
+
 		pw, err := readPassword("Enter master password: ")
 		if err != nil {
 			return err
@@ -37,5 +49,6 @@ var initCmd = &cobra.Command{
 }
 
 func init() {
+	initCmd.Flags().Bool("force", false, "overwrite existing store")
 	rootCmd.AddCommand(initCmd)
 }
