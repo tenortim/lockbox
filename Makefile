@@ -7,11 +7,22 @@ LDFLAGS := -s -w \
 	-X github.com/tenortim/lockbox/internal/cmd.commit=$(COMMIT) \
 	-X github.com/tenortim/lockbox/internal/cmd.date=$(DATE)
 
-.PHONY: build test vet check clean release release-snapshot
+DESTDIR ?= $(HOME)/.local/bin
+
+.PHONY: help build install test vet check clean release release-snapshot
+
+## help: list available targets
+help:
+	@grep '^## ' $(MAKEFILE_LIST) | sed 's/^## /  /'
 
 ## build: compile the binary for the current platform
 build:
 	go build -ldflags "$(LDFLAGS)" -o lockbox ./cmd/lockbox/
+
+## install: build and install to DESTDIR (default: ~/.local/bin)
+install: build
+	install -d $(DESTDIR)
+	install -m 755 lockbox $(DESTDIR)/lockbox
 
 ## test: run all tests
 test:
