@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -25,10 +26,17 @@ visible to all subsequent child processes.`,
 		}
 
 		for _, s := range secrets {
-			fmt.Fprintf(cmd.OutOrStdout(), "export %s=%q\n", s.EnvVar, s.Value)
+			fmt.Fprintf(cmd.OutOrStdout(), "export %s=%s\n", s.EnvVar, shellQuote(s.Value))
 		}
 		return nil
 	},
+}
+
+// shellQuote wraps s in single quotes, escaping any single quotes within it.
+// This produces output safe for use with eval, including values that contain
+// command substitution syntax like $(...) or backticks.
+func shellQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func init() {

@@ -56,6 +56,7 @@ func readPassword(prompt string) (string, error) {
 		_, err := os.Stdin.Read(buf[:])
 		if err != nil {
 			fmt.Fprint(os.Stderr, "\r\n")
+			store.ZeroBytes(pw)
 			return "", fmt.Errorf("reading input: %w", err)
 		}
 		b := buf[0]
@@ -69,9 +70,12 @@ func readPassword(prompt string) (string, error) {
 		switch {
 		case b == '\r' || b == '\n':
 			fmt.Fprint(os.Stderr, "\r\n")
-			return string(pw), nil
+			result := string(pw)
+			store.ZeroBytes(pw)
+			return result, nil
 		case b == 3: // Ctrl+C
 			fmt.Fprint(os.Stderr, "\r\n")
+			store.ZeroBytes(pw)
 			return "", fmt.Errorf("interrupted")
 		case b == 127 || b == 8: // DEL or BS
 			if len(pw) > 0 {

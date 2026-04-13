@@ -32,6 +32,11 @@ func NewUserKeyringCache() *KeyringCache {
 // to be reachable through the session keyring chain. In tmux/screen the
 // session keyring is revoked, so we need read (and write for updates) in
 // the user mask (UID match) as well.
+//
+// Security trade-off: KEY_USR_ALL means any process running as the same UID
+// can read these keys, not just processes descended from the unlocking shell.
+// This is acceptable for a single-user secret cache but differs from the
+// tighter isolation of the session keyring.
 const keyPerms = 0x3f3f0000 // KEY_POS_ALL | KEY_USR_ALL
 
 func (k *KeyringCache) Store(name, value string) error {

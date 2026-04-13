@@ -174,9 +174,8 @@ func ZeroBytes(b []byte) {
 	}
 }
 
-// ReadAll reads all content from a reader then zeros the internal buffer
-// on the returned data after it has been consumed. Caller should zero the
-// returned slice when done.
+// ReadAll reads all content from a reader. The caller is responsible for
+// zeroing the returned slice when done (use ZeroBytes).
 func ReadAll(r io.Reader) ([]byte, error) {
 	return io.ReadAll(r)
 }

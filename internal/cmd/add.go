@@ -27,6 +27,9 @@ var addCmd = &cobra.Command{
 		if addEnvVar == "" {
 			return fmt.Errorf("--env is required")
 		}
+		if !validEnvVarName(addEnvVar) {
+			return fmt.Errorf("invalid env var name %q: must match [A-Za-z_][A-Za-z0-9_]*", addEnvVar)
+		}
 
 		var expiresAt *time.Time
 		if addExpires != "" {
@@ -86,6 +89,11 @@ var addCmd = &cobra.Command{
 }
 
 var durationRe = regexp.MustCompile(`^(\d+)([dDwWmMyY])$`)
+var envVarRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+func validEnvVarName(name string) bool {
+	return envVarRe.MatchString(name)
+}
 
 // parseExpiry parses an expiry string which can be:
 //   - A date: "2024-12-31" or "2024-12-31T15:04:05Z"
