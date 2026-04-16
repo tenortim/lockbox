@@ -51,8 +51,9 @@ clean:
 	rm -f lockbox
 	rm -rf dist/
 
-## release: create a tagged release and push to GitHub via goreleaser
-##   Usage: make release V=0.3.0
+## release: tag, push, and publish a release via goreleaser (local fallback)
+##   Normal usage: tag and push; GitHub Actions runs goreleaser automatically.
+##   Usage: make release V=0.4.0
 ##   Set GITHUB_TOKEN in your environment, or gh auth token is used as fallback.
 release:
 ifndef V
