@@ -52,7 +52,7 @@ clean:
 	rm -rf dist/
 
 ## release: create a tagged release and push to GitHub via goreleaser
-##   Usage: make release V=0.2.0
+##   Usage: make release V=0.3.0
 ##   Set GITHUB_TOKEN in your environment, or gh auth token is used as fallback.
 release:
 ifndef V
@@ -62,7 +62,11 @@ endif
 		echo "Error: working tree is dirty. Commit or stash changes first."; \
 		exit 1; \
 	fi
-	git tag -a "v$(V)" -m "Release v$(V)"
+	@if git rev-parse "v$(V)" >/dev/null 2>&1; then \
+		echo "Tag v$(V) already exists, skipping creation."; \
+	else \
+		git tag -a "v$(V)" -m "Release v$(V)"; \
+	fi
 	git push origin "v$(V)"
 	@if [ -z "$$GITHUB_TOKEN" ]; then \
 		echo "GITHUB_TOKEN not set, falling back to gh auth token"; \
