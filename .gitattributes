@@ -1,0 +1,9 @@
+# Normalise all text files to LF in the repo and on checkout.
+# This overrides core.autocrlf for every contributor.
+* text=auto eol=lf
+
+# Binaries — never touch line endings.
+*.exe binary
+*.dll binary
+*.so  binary
+*.a   binary

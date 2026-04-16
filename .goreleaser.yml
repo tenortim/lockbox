@@ -8,7 +8,7 @@ before:
     - go test ./...
 
 builds:
-  - id: lockbox
+  - id: lockbox-linux
     main: ./cmd/lockbox
     binary: lockbox
     env:
@@ -18,6 +18,21 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/tenortim/lockbox/internal/cmd.version={{.Version}}
+      - -X github.com/tenortim/lockbox/internal/cmd.commit={{.Commit}}
+      - -X github.com/tenortim/lockbox/internal/cmd.date={{.Date}}
+
+  - id: lockbox-windows
+    main: ./cmd/lockbox
+    binary: lockbox
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
     ldflags:
       - -s -w
       - -X github.com/tenortim/lockbox/internal/cmd.version={{.Version}}

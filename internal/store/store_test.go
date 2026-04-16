@@ -3,6 +3,7 @@ package store
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -16,13 +17,16 @@ func TestCreateAndOpen(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
-	// File should exist with restricted permissions.
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatalf("Stat: %v", err)
-	}
-	if perm := info.Mode().Perm(); perm != 0600 {
-		t.Errorf("expected perms 0600, got %04o", perm)
+	// File should exist with restricted permissions (Unix only; Windows does not
+	// enforce octal permission bits).
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("Stat: %v", err)
+		}
+		if perm := info.Mode().Perm(); perm != 0600 {
+			t.Errorf("expected perms 0600, got %04o", perm)
+		}
 	}
 
 	// Open with correct password.
@@ -209,6 +213,9 @@ func TestDefaultStorePath(t *testing.T) {
 }
 
 func TestDirectoryPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows does not enforce Unix octal directory permission bits")
+	}
 	dir := t.TempDir()
 	storeDir := filepath.Join(dir, "lockbox")
 	path := filepath.Join(storeDir, "store.age")

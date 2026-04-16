@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -40,7 +39,7 @@ otherwise, the store is decrypted on-the-fly.`,
 			return fmt.Errorf("command not found: %s", args[0])
 		}
 
-		return syscall.Exec(binary, args, env)
+		return execProcess(binary, args, env)
 	},
 }
 

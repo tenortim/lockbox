@@ -9,7 +9,7 @@ LDFLAGS := -s -w \
 
 DESTDIR ?= $(HOME)/.local/bin
 
-.PHONY: help build install test vet check clean release release-snapshot
+.PHONY: help build build-linux build-windows build-all install test vet check clean release release-snapshot
 
 ## help: list available targets
 help:
@@ -18,6 +18,17 @@ help:
 ## build: compile the binary for the current platform
 build:
 	go build -ldflags "$(LDFLAGS)" -o lockbox ./cmd/lockbox/
+
+## build-linux: cross-compile a Linux amd64 binary
+build-linux:
+	GOOS=linux GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/lockbox-linux-amd64 ./cmd/lockbox/
+
+## build-windows: cross-compile a Windows amd64 binary
+build-windows:
+	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/lockbox-windows-amd64.exe ./cmd/lockbox/
+
+## build-all: cross-compile for all supported platforms (output goes to dist/)
+build-all: build-linux build-windows
 
 ## install: build and install to DESTDIR (default: ~/.local/bin)
 install: build

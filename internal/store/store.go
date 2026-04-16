@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"filippo.io/age"
 	"filippo.io/age/armor"
@@ -134,12 +133,12 @@ func Lock(path string) (unlock func(), err error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening lock file: %w", err)
 	}
-	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+	if err := acquireLock(f); err != nil {
 		f.Close()
-		return nil, fmt.Errorf("acquiring lock: %w", err)
+		return nil, err
 	}
 	return func() {
-		syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		releaseLock(f)
 		f.Close()
 	}, nil
 }

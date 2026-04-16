@@ -16,10 +16,11 @@ var storePath string
 var rootCmd = &cobra.Command{
 	Use:   "lockbox",
 	Short: "Secure secret management for headless systems",
-	Long: `lockbox provides ssh-agent-style secret management for headless Linux systems.
-Secrets are persisted in an age-encrypted store and cached in the Linux kernel
-keyring during a session. Use 'lockbox run' to inject secrets as ephemeral
-environment variables into child processes.`,
+	Long: `lockbox provides ssh-agent-style secret management for headless systems.
+Secrets are persisted in an age-encrypted store and cached in a platform session
+store (Linux kernel keyring, Windows Credential Manager) during a session. Use
+'lockbox run' to inject secrets as ephemeral environment variables into child
+processes.`,
 }
 
 func Execute() {
