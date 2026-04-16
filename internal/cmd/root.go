@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -82,6 +83,12 @@ func readPassword(prompt string) (string, error) {
 			if len(pw) > 0 {
 				pw = pw[:len(pw)-1]
 				fmt.Fprint(os.Stderr, "\b \b")
+			}
+		case b == 21: // Ctrl+U - delete entire line
+			if len(pw) > 0 {
+				fmt.Fprint(os.Stderr, strings.Repeat("\b \b", len(pw)))
+				store.ZeroBytes(pw)
+				pw = pw[:0]
 			}
 		case b == 27: // ESC - start of escape sequence
 			escRemain = 2
