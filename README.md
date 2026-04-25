@@ -1,19 +1,19 @@
 # lockbox
 
-Secure secret management for headless Linux systems.
+Secure secret management for Linux, macOS, and Windows.
 
 `lockbox` provides an **ssh-agent-style experience** for API tokens, PATs, and
 other secrets. Secrets are persisted in an
 [age](https://github.com/FiloSottile/age)-encrypted store and cached in the
-Linux kernel keyring during a session. Unlock once with a master password, then
-use your secrets without re-entering it.
+OS native secret store during a session. Unlock once with a master password,
+then use your secrets without re-entering it.
 
 ## Why lockbox?
 
-If you work on headless Linux machines over SSH and need to authenticate with
-services like GitHub, Jira, or Confluence, you've probably hit these problems:
+If you work on Linux, macOS, or Windows and need to authenticate with services
+like GitHub, Jira, or Confluence, you've probably hit these problems:
 
-| Existing tool | Problem on headless Linux |
+| Existing tool | Problem |
 |---|---|
 | GNOME Keyring / KWallet | Falls back to **plaintext** without a GUI session |
 | `keepassxc-cli` | Master password required on **every access** |
@@ -23,22 +23,30 @@ services like GitHub, Jira, or Confluence, you've probably hit these problems:
 | Kernel keyring (`keyctl`) alone | No persistence -- secrets **lost on logout** |
 
 `lockbox` combines the best parts: age encryption for at-rest storage +
-kernel keyring for session caching. No daemon, no GUI, no subscriptions.
+OS native secret store for session caching. No daemon, no GUI, no
+subscriptions. Works natively on Linux (kernel keyring), macOS (Keychain),
+and Windows (Credential Manager) without needing a GUI session.
 
 ## How it works
 
 ```
-  Encrypted store on disk              Session cache in kernel memory
-  ~/.config/lockbox/store.age    -->   Linux kernel keyring (@s)
-  (age + scrypt)                       (auto-destroyed on logout)
-                    \                  /
+  Encrypted store on disk              Session cache in OS secret store
+  ~/.config/lockbox/store.age    -->   Linux:   kernel user keyring (@u)
+  (age + scrypt)                       macOS:   Keychain (Security.framework)
+                    \                  Windows: Credential Manager
                      lockbox unlock
                      (enter master password once)
 ```
 
 **Secrets never exist as plaintext on the filesystem.** The store is
-age-encrypted at rest. During a session, secrets live in kernel memory
-(the same mechanism that backs `ssh-agent` keys).
+age-encrypted at rest. During a session, secrets live in the OS native
+secret store — the same mechanism used by SSH agents and password managers.
+
+| Platform | Session cache backend | Cleared by |
+|---|---|---|
+| Linux | Kernel user keyring (`@u`) | `lockbox lock` or last logout |
+| macOS | Keychain (Security.framework) | `lockbox lock` |
+| Windows | Credential Manager (`CRED_PERSIST_LOCAL_MACHINE`) | `lockbox lock` |
 
 ## Quick start
 
@@ -84,7 +92,7 @@ lockbox run --secrets github_pat -- gh pr list
 
 # End of session
 lockbox lock
-# Or just disconnect -- the kernel destroys the session keyring automatically
+# On Linux, the user keyring is also destroyed automatically on last logout
 ```
 
 ### Alternative: export to shell
@@ -139,17 +147,18 @@ environment variable.
   into the child process's environment via `execve`. The parent shell's
   environment is never modified, and the secrets are not visible in
   `/proc/<parent-pid>/environ`.
-- **Post-session access**: The kernel session keyring is destroyed when the
-  login session ends. No cleanup needed.
-- **Other users**: The kernel keyring is per-UID. Other users on the same
+- **Post-session access**: On Linux, the user keyring is destroyed when your
+  last session ends. On macOS and Windows, cached secrets persist in the
+  Keychain / Credential Manager until `lockbox lock` is run explicitly.
+- **Other users**: All three backends are per-user. Other users on the same
   system cannot access your cached secrets.
 
 ### Trust boundaries
 
-- **Same-session processes**: Any process running as your user in the same
-  session can read the session keyring. This is the same trust boundary as
-  `ssh-agent`. Use `lockbox run` to minimize the window -- secrets are only
-  in the child process's environment.
+- **Same-session processes**: Any process running as your user can read the
+  session cache. This is the same trust boundary as `ssh-agent`. Use
+  `lockbox run` to minimize the window -- secrets are only in the child
+  process's environment.
 - **`lockbox env` / `eval`**: Exporting secrets to the shell environment means
   every subsequent command inherits them. Use `lockbox run` when possible.
 - **Go garbage collector**: Go's GC means we cannot guarantee secrets are
@@ -230,14 +239,12 @@ entirely optional.
 
 ## tmux / screen
 
-The Linux kernel session keyring is tied to the login session. When you
-detach from a tmux or screen session and reconnect, you get a new session
-keyring -- your cached secrets will be gone and you'll need to `lockbox unlock`
-again.
+lockbox uses the Linux user keyring (`@u`), which is shared across all sessions
+for the same UID. Detaching and reattaching a tmux or screen session does not
+lose your cached secrets -- no need to `lockbox unlock` again after reconnecting.
 
-If this is a frequent workflow, you can use the user keyring instead, which
-persists as long as you're logged in somewhere on the system. (This is not
-yet exposed as a CLI flag but is supported in the code.)
+On macOS and Windows the Keychain / Credential Manager is session-independent
+by design, so reconnects are never an issue there either.
 
 ## Shell integration
 
@@ -264,6 +271,12 @@ eval "$(lockbox completion zsh)"
 lockbox completion fish | source
 ```
 
+**PowerShell:**
+```powershell
+# Add to your $PROFILE
+Invoke-Expression (lockbox completion powershell | Out-String)
+```
+
 With completion enabled, you can tab-complete secret names:
 
 ```bash
@@ -280,8 +293,8 @@ Show lock/unlock status in your shell prompt using `lockbox status --short`:
 # Unlocked: "unlocked 3"
 ```
 
-This reads directly from the kernel keyring (a syscall, no disk I/O) so it
-adds negligible latency to your prompt.
+This reads directly from the OS secret store (no disk I/O) so it adds
+negligible latency to your prompt.
 
 **Bash:**
 ```bash
@@ -356,7 +369,13 @@ go build -o lockbox ./cmd/lockbox/
 ### Requirements
 
 - Go 1.21 or later
-- Linux (kernel keyring support)
+- Linux, macOS, or Windows
+
+**macOS note:** the Keychain backend uses CGo (Security.framework), so
+`CGO_ENABLED=1` (the default) is required. Cross-compiling a macOS binary
+from another platform is not supported.
+
+**Linux and Windows** can be built with `CGO_ENABLED=0`.
 
 ### Running tests
 
@@ -364,19 +383,19 @@ go build -o lockbox ./cmd/lockbox/
 go test ./...
 ```
 
-The cache tests exercise the real kernel keyring and will be skipped
-automatically on non-Linux systems or environments where the keyring is
-unavailable.
+Cache tests exercise the real OS secret store and are skipped automatically
+on platforms or environments where the backend is unavailable.
 
 ## How it compares
 
 | Feature | lockbox | `pass`+GPG | 1Password CLI | `keyctl` alone |
 |---|---|---|---|---|
 | Encrypted at rest | age (scrypt) | GPG | Cloud | N/A |
-| Session caching | Kernel keyring | gpg-agent | `op` session | Kernel keyring |
+| Session caching | Keyring / Keychain / CredMgr | gpg-agent | `op` session | Kernel keyring |
 | Unlock model | Master password once | GPG passphrase once | Account login | N/A |
 | Persistence | Encrypted file | GPG files + git | Cloud | None |
 | Headless / SSH | Yes | Yes | Yes | Yes |
+| Platform support | Linux, macOS, Windows | Linux, macOS | Linux, macOS, Windows | Linux |
 | External dependency | None | GPG + key mgmt | Subscription | None |
 | Env var injection | `run` / `env` | Manual | `op run` | Manual |
 | Setup complexity | `lockbox init` | GPG keygen + init | Account + install | N/A |
