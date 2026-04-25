@@ -9,7 +9,7 @@ LDFLAGS := -s -w \
 
 DESTDIR ?= $(HOME)/.local/bin
 
-.PHONY: help build build-linux build-windows build-all install test vet check clean release release-snapshot
+.PHONY: help build build-linux build-windows build-darwin build-all install test vet check clean release release-snapshot
 
 ## help: list available targets
 help:
@@ -27,8 +27,14 @@ build-linux:
 build-windows:
 	GOOS=windows GOARCH=amd64 go build -ldflags "$(LDFLAGS)" -o dist/lockbox-windows-amd64.exe ./cmd/lockbox/
 
+## build-darwin: compile macOS binaries (must run on macOS; CGO required for Keychain)
+build-darwin:
+	GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o dist/lockbox-darwin-arm64 ./cmd/lockbox/
+	GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags "$(LDFLAGS)" -o dist/lockbox-darwin-amd64 ./cmd/lockbox/
+
 ## build-all: cross-compile for all supported platforms (output goes to dist/)
-build-all: build-linux build-windows
+## Note: build-darwin requires running on macOS (CGO_ENABLED=1 + Keychain headers).
+build-all: build-linux build-windows build-darwin
 
 ## install: build and install to DESTDIR (default: ~/.local/bin)
 install: build

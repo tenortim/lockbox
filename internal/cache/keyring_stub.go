@@ -1,10 +1,10 @@
-//go:build !linux && !windows
+//go:build !linux && !windows && !darwin
 
 package cache
 
 import "errors"
 
-var errUnsupported = errors.New("session cache not supported on this platform (Linux kernel keyring required)")
+var errUnsupported = errors.New("session cache not supported on this platform")
 
 // StubCache is a no-op implementation for non-Linux platforms.
 type StubCache struct{}
