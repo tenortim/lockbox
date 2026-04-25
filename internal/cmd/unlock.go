@@ -38,6 +38,9 @@ var unlockCmd = &cobra.Command{
 			if err := c.Store("__env__"+name, secret.EnvVar); err != nil {
 				return fmt.Errorf("caching env mapping for '%s': %w", name, err)
 			}
+			if err := c.Store("__desc__"+name, secret.Description); err != nil {
+				return fmt.Errorf("caching description for '%s': %w", name, err)
+			}
 			if secret.ExpiresAt != nil {
 				if err := c.Store("__expires__"+name, secret.ExpiresAt.Format(time.RFC3339)); err != nil {
 					return fmt.Errorf("caching expiry for '%s': %w", name, err)
