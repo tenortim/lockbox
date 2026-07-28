@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -28,24 +27,13 @@ var unlockCmd = &cobra.Command{
 			return err
 		}
 
+		if err := refreshSessionCache(c, data); err != nil {
+			return err
+		}
+
 		count := 0
 		var warnings []string
 		for name, secret := range data.Secrets {
-			if err := c.Store(name, secret.Value); err != nil {
-				return fmt.Errorf("caching secret '%s': %w", name, err)
-			}
-			// Also cache the env_var mapping so run/env can work without the store password.
-			if err := c.Store("__env__"+name, secret.EnvVar); err != nil {
-				return fmt.Errorf("caching env mapping for '%s': %w", name, err)
-			}
-			if err := c.Store("__desc__"+name, secret.Description); err != nil {
-				return fmt.Errorf("caching description for '%s': %w", name, err)
-			}
-			if secret.ExpiresAt != nil {
-				if err := c.Store("__expires__"+name, secret.ExpiresAt.Format(time.RFC3339)); err != nil {
-					return fmt.Errorf("caching expiry for '%s': %w", name, err)
-				}
-			}
 			count++
 			if secret.IsExpired() {
 				warnings = append(warnings, fmt.Sprintf("  WARNING: '%s' (%s) has EXPIRED", name, secret.EnvVar))

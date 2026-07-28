@@ -41,6 +41,17 @@ var removeCmd = &cobra.Command{
 			return err
 		}
 
+		c := getCache()
+		cacheUnlocked, err := sessionCacheUnlocked(c)
+		if err != nil {
+			return fmt.Errorf("secret removed, but %w; run 'lockbox unlock' to reload it", err)
+		}
+		if cacheUnlocked {
+			if err := refreshSessionCache(c, data); err != nil {
+				return fmt.Errorf("secret removed, but refreshing session cache: %w; run 'lockbox unlock' to reload it", err)
+			}
+		}
+
 		fmt.Fprintf(cmd.OutOrStdout(), "Secret '%s' removed.\n", name)
 		return nil
 	},
